@@ -17,7 +17,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} font-sans antialiased bg-white dark:bg-gray-900`}>
         <main className="min-h-screen">
-          {children}
+        {children}
         </main>
       </body>
     </html>

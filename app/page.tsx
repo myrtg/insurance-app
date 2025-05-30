@@ -14,7 +14,7 @@ export default function Home() {
           </p>
         </header>
         <DashboardChat />
-      </div>
+        </div>
     </div>
   )
 }

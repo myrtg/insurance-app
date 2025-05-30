@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  frontend:
+    image: insurance-frontend:latest
+    pull_policy: never
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:5000
+      - NODE_ENV=production
+    depends_on:
+      - backend
+    networks:
+      - insurance-network
+    restart: unless-stopped
+
+  # Backend service
+  backend:
+    image: flaskback-backend:latest
+    pull_policy: never
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - FLASK_APP=app.py
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - TINYLLAMA_SERVICE_URL=http://tinyllama:8000
+    depends_on:
+      - tinyllama
+    networks:
+      - insurance-network
+    restart: unless-stopped
+
+  # TinyLLaMA service
+  tinyllama:
+    image: tinyllama-service:latest
+    pull_policy: never
+    ports:
+      - "8000:8000"
+    networks:
+      - insurance-network
+    restart: unless-stopped
+
+networks:
+  insurance-network:
+    driver: bridge
+
+volumes:
+  # Add any volumes you need for persistent data
+  backend_data: 

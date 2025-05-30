@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import apiService, { ChatResponse, SingleModelResponse } from '../services/api'
 
 const MODELS = [
   { id: 'all', label: 'All Models' },
@@ -13,29 +14,42 @@ export default function DashboardChat() {
   const [selectedModel, setSelectedModel] = useState<ModelId>('all')
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [response, setResponse] = useState<any>(null)
+  const [response, setResponse] = useState<ChatResponse | SingleModelResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [expandedCard, setExpandedCard] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!input.trim() || isLoading) return
+    
     setIsLoading(true)
     setError(null)
     setResponse(null)
     setExpandedCard(null)
+
     try {
-      const endpoint = selectedModel === 'all' ? '/api/chat' : `/api/${selectedModel}`
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input: input.trim() }),
-      })
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
-      const data = await res.json()
-      setResponse(data)
+      let result
+      switch (selectedModel) {
+        case 'all':
+          result = await apiService.chat(input.trim())
+          break
+        case 'llama3':
+          result = await apiService.llama3(input.trim())
+          break
+        case 'mixtral':
+          result = await apiService.mixtral(input.trim())
+          break
+        case 'tinyllama':
+          result = await apiService.tinyllama(input.trim())
+          break
+      }
+      setResponse(result)
+      
+      if (!result.success) {
+        setError('Failed to get response from the selected model(s)')
+      }
     } catch (err: any) {
-      setError(err.message || 'Unknown error')
+      setError(err.message || 'An error occurred while processing your request')
     } finally {
       setIsLoading(false)
     }
@@ -79,10 +93,11 @@ export default function DashboardChat() {
             className="px-10 py-6 rounded-2xl bg-primary text-white font-bold shadow-md hover:bg-primary-dark transition disabled:opacity-60 text-xl"
             disabled={isLoading || !input.trim()}
           >
-            {isLoading ? '...' : 'Send'}
+            {isLoading ? 'Processing...' : 'Send'}
           </button>
         </div>
       </form>
+
       {/* Results */}
       <div className="w-full">
         {error && (
@@ -90,22 +105,10 @@ export default function DashboardChat() {
             {error}
           </div>
         )}
-        {selectedModel === 'all' && response && (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-            {/* Dataset match */}
-            {response.dataset_match && response.dataset && (
-              <div 
-                onClick={() => toggleCard('dataset')}
-                className={`bg-[#18181b] border border-primary rounded-2xl p-6 flex flex-col shadow-none cursor-pointer transition-all duration-300
-                  ${expandedCard === 'dataset' ? 'col-span-2 row-span-2 scale-105 z-10' : ''}`}
-              >
-                <div className="text-xs font-bold text-primary mb-2">Dataset Match</div>
-                <div className="text-lg text-gray-100 mb-2 whitespace-pre-wrap">{response.dataset.response}</div>
-                <div className="text-xs text-gray-400">Intent: {response.dataset.intent} | Source: {response.dataset.source}</div>
-              </div>
-            )}
-            {/* Model answers */}
-            {Object.entries(response.models).map(([model, result]: [string, any]) => (
+        
+        {selectedModel === 'all' && response && 'responses' in response && (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {Object.entries(response.responses).map(([model, result]) => (
               <div 
                 key={model}
                 onClick={() => toggleCard(model)}
@@ -113,17 +116,17 @@ export default function DashboardChat() {
                   ${expandedCard === model ? 'col-span-2 row-span-2 scale-105 z-10' : ''}`}
               >
                 <div className="text-xs font-bold text-primary mb-2">
-                  {model === 'llama3' ? 'LLaMA 3' : model === 'mixtral' ? 'Mixtral' : model === 'tinyllama' ? 'TinyLLaMA' : model}
+                  {model === 'llama3' ? 'LLaMA 3' : model === 'mixtral' ? 'Mixtral' : 'TinyLLaMA'}
                 </div>
-                <div className={`text-lg whitespace-pre-wrap ${result.success ? 'text-gray-100' : 'text-red-400'}`}>
-                  {result.success ? result.response : result.error}
+                <div className={`text-lg whitespace-pre-wrap ${result ? 'text-gray-100' : 'text-red-400'}`}>
+                  {result || 'No response available'}
                 </div>
-                <div className="text-xs text-gray-500 mt-2">{result.model}</div>
               </div>
             ))}
           </div>
         )}
-        {selectedModel !== 'all' && response && (
+
+        {selectedModel !== 'all' && response && 'response' in response && (
           <div className="flex flex-row justify-center w-full">
             <div 
               onClick={() => toggleCard(selectedModel)}
@@ -133,10 +136,9 @@ export default function DashboardChat() {
               <div className="text-xs font-bold text-primary mb-2">
                 {MODELS.find((m) => m.id === selectedModel)?.label}
               </div>
-              <div className={`text-lg whitespace-pre-wrap ${response.success ? 'text-gray-100' : 'text-red-400'}`}>
-                {response.success ? response.response : response.error}
+              <div className={`text-lg whitespace-pre-wrap ${response.response ? 'text-gray-100' : 'text-red-400'}`}>
+                {response.response || 'No response available'}
               </div>
-              <div className="text-xs text-gray-500 mt-2">{response.model}</div>
             </div>
           </div>
         )}
