@@ -1,13 +1,29 @@
 // Get API base URL from environment variable, fallback to localhost
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 // Response types based on your backend API documentation
+export interface ModelResponse {
+  model: string;
+  response: string;
+  success: boolean;
+}
+
+export interface DatasetResponse {
+  intent: string;
+  model: string;
+  response: string;
+  source: string;
+  success: boolean;
+}
+
 export interface ChatResponse {
   success: boolean;
-  responses: {
-    llama3: string | null;
-    mixtral: string | null;
-    tinyllama: string | null;
+  dataset?: DatasetResponse;
+  dataset_match: boolean;
+  models: {
+    llama3: ModelResponse;
+    mixtral: ModelResponse;
+    tinyllama: ModelResponse;
   };
 }
 
@@ -64,10 +80,11 @@ export const apiService = {
       console.error('Error in combined chat:', error);
       return {
         success: false,
-        responses: {
-          llama3: null,
-          mixtral: null,
-          tinyllama: null,
+        dataset_match: false,
+        models: {
+          llama3: { model: 'llama-3.3-70b-versatile', response: '', success: false },
+          mixtral: { model: 'gemma2-9b-it', response: '', success: false },
+          tinyllama: { model: 'TinyLLaMA', response: '', success: false },
         },
       };
     }

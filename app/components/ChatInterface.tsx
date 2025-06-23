@@ -96,7 +96,7 @@ export default function ChatInterface({ selectedModel }: ChatInterfaceProps) {
       console.error('Error:', error)
       const errorMessage: ChatMessage = {
         id: Date.now().toString(),
-        content: 'An error occurred while fetching the response. Please make sure the backend server is running at http://localhost:5000',
+        content: 'An error occurred while fetching the response. Please make sure the backend server is running at http://localhost:5001',
         role: 'assistant',
         error: 'Failed to get response',
       }

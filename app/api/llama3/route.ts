@@ -4,7 +4,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
     
-    const response = await fetch('http://localhost:5000/api/llama3', {
+    const response = await fetch('http://localhost:5001/api/llama3', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
